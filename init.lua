@@ -1,3 +1,6 @@
+vim.g.python3_host_prog = '/usr/bin/python3'
+vim.g.loaded_python_provider = 0
+
 require("config.lazy")
 
 vim.cmd('filetype plugin indent on')
