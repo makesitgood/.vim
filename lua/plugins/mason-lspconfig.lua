@@ -6,48 +6,33 @@ return {
         automatic_installation = true,
     },
     config = function()
-        local nvim_lsp = require('lspconfig')
-        local util = require('lspconfig/util')
+        local util = require('lspconfig.util')  -- Note: util is still from lspconfig.util
         local path = util.path
-
+        
         -- Use an on_attach function to only map the following keys
         -- after the language server attaches to the current buffer
         local on_attach = function(client, bufnr)
-          local function buf_set_keymap(...) vim.api.nvim_buf_set_keymap(bufnr, ...) end
-          local function buf_set_option(...) vim.api.nvim_buf_set_option(bufnr, ...) end
           -- Mappings.
-          local opts = { noremap=true, silent=true }
-
+          local opts = { noremap=true, silent=true, buffer=bufnr }
+          
           -- See `:help vim.lsp.*` for documentation on any of the below functions
-          buf_set_keymap('n', 'gD', '<Cmd>lua vim.lsp.buf.declaration()<CR>', opts)
-          buf_set_keymap('n', 'gd', '<Cmd>lua vim.lsp.buf.definition()<CR>', opts)
-          buf_set_keymap('n', 'K', '<Cmd>lua vim.lsp.buf.hover()<CR>', opts)
-          buf_set_keymap('n', 'gi', '<cmd>lua vim.lsp.buf.implementation()<CR>', opts)
-          --buf_set_keymap('n', '<space>wa', '<cmd>lua vim.lsp.buf.add_workspace_folder()<CR>', opts)
-          --buf_set_keymap('n', '<space>wr', '<cmd>lua vim.lsp.buf.remove_workspace_folder()<CR>', opts)
-          --buf_set_keymap('n', '<space>wl', '<cmd>lua print(vim.inspect(vim.lsp.buf.list_workspace_folders()))<CR>', opts)
-        --  buf_set_keymap('n', '<space>D', '<cmd>lua vim.lsp.buf.type_definition()<CR>', opts)
-          buf_set_keymap('n', '<space>rn', '<cmd>lua vim.lsp.buf.rename()<CR>', opts)
-        --  buf_set_keymap('n', '<space>ca', '<cmd>lua vim.lsp.buf.code_action()<CR>', opts)
-        --  buf_set_keymap('n', 'gr', '<cmd>lua vim.lsp.buf.references()<CR>', opts)
-          buf_set_keymap('n', '<space>e', '<cmd>lua vim.lsp.diagnostic.show_line_diagnostics()<CR>', opts)
-          buf_set_keymap('n', '[d', '<cmd>lua vim.lsp.diagnostic.goto_prev()<CR>', opts)
-          buf_set_keymap('n', ']d', '<cmd>lua vim.lsp.diagnostic.goto_next()<CR>', opts)
-          buf_set_keymap('n', '<space>q', '<cmd>lua vim.lsp.diagnostic.set_loclist()<CR>', opts)
-          buf_set_keymap("n", "<space>f", "<cmd>lua vim.lsp.buf.formatting()<CR>", opts)
-
+          vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, opts)
+          vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
+          vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
+          vim.keymap.set('n', 'gi', vim.lsp.buf.implementation, opts)
+          vim.keymap.set('n', '<space>rn', vim.lsp.buf.rename, opts)
+          vim.keymap.set('n', '<space>e', vim.diagnostic.open_float, opts)  -- Note: diagnostic API changed
+          vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, opts)
+          vim.keymap.set('n', ']d', vim.diagnostic.goto_next, opts)
+          vim.keymap.set('n', '<space>q', vim.diagnostic.setloclist, opts)
+          vim.keymap.set('n', '<space>f', function() vim.lsp.buf.format { async = true } end, opts)
         end
-
-        nvim_lsp.pyright.setup({
-            autostart = true,
-            on_attach = on_attach,
-            root_dir = util.root_pattern(".git", "pyproject.toml", "setup.py", "requirements.txt"),
-            flags = {
-                debounce_text_changes = 150,
-            },
-            cmd_env = {
-                VIRTUAL_ENV = "$HOME/venv"
-            },
+        
+        -- Setup pyright using vim.lsp.config
+        vim.lsp.config.pyright = {
+            cmd = { 'pyright-langserver', '--stdio' },
+            filetypes = { 'python' },
+            root_markers = { '.git', 'pyproject.toml', 'setup.py', 'requirements.txt' },
             settings = {
                 python = {
                     analysis = {
@@ -56,23 +41,50 @@ return {
                         }
                     }
                 }
-            }
-        })
-
-        nvim_lsp.gopls.setup {
-            cmd = {"gopls", "serve"},
-            filetypes = {"go", "gomod"},
-            root_dir = util.root_pattern("go.work", "go.mod", ".git"),
-            settings = {
-              gopls = {
-                analyses = {
-                  unusedparams = true,
-                },
-                staticcheck = true,
-              },
             },
-            on_attach = on_attach,
+            before_init = function(params, config)
+                config.settings.python.pythonPath = vim.fn.expand('$HOME/venv/bin/python')
+            end,
         }
-
+        
+        -- Setup gopls using vim.lsp.config
+        vim.lsp.config.gopls = {
+            cmd = {'gopls', 'serve'},
+            filetypes = {'go', 'gomod'},
+            root_markers = {'go.work', 'go.mod', '.git'},
+            settings = {
+                gopls = {
+                    analyses = {
+                        unusedparams = true,
+                    },
+                    staticcheck = true,
+                },
+            },
+        }
+        
+        -- Enable the configurations with vim.lsp.enable
+        vim.lsp.enable('pyright')
+        vim.lsp.enable('gopls')
+        
+        -- Set up autocmd to attach to buffers
+        vim.api.nvim_create_autocmd('FileType', {
+            pattern = 'python',
+            callback = function(args)
+                vim.lsp.start(vim.lsp.config.pyright, { 
+                    bufnr = args.buf,
+                    on_attach = on_attach
+                })
+            end,
+        })
+        
+        vim.api.nvim_create_autocmd('FileType', {
+            pattern = {'go', 'gomod'},
+            callback = function(args)
+                vim.lsp.start(vim.lsp.config.gopls, { 
+                    bufnr = args.buf,
+                    on_attach = on_attach
+                })
+            end,
+        })
     end
 }
