@@ -36,6 +36,8 @@ vim.opt.cindent = true
 --vim.opt.writebackup = false
 --vim.opt.noswapfile 
 vim.opt.foldmethod = 'syntax'
+vim.opt.foldlevel = 99
+vim.opt.foldlevelstart = 99
 --vim.opt.t_Co = 256
 vim.opt.guifont = 'FiraCode Nerd Font:h12'
 --vim.opt.guifont = 'JetBrainsMono Nerd Font:h12'
@@ -145,9 +147,6 @@ vim.g.mapleader = " "
 map('i', '<C-c>', '<Esc>')
 map('', '-', ':nohls<cr>')
 map('', '<leader>?', ':lua vim.diagnostic.open_float()<cr>')
-map('n', '<C-n>', ':NERDTreeToggle<CR>')
-map('v', '<leader>c', '<plug>NERDCommenterToggle')
-map('n', '<leader>c', '<plug>NERDCommenterToggle')
 map('v', '<C-y>', ":'<,'>w !xclip -selection clipboard<Cr><Cr>", {noremap = true})
 map('v', '<C-v>', "<ESC>\"+p", {noremap = true})
 map('t', '<Esc>', '<C-\\><C-n>', {noremap = true})
@@ -156,9 +155,6 @@ map('', '<leader>n', ':bnext<CR>', {noremap = true})
 map('i', 'jk', '<Esc>')
 map('n', '<leader>*', ':Grepper -tool ag -cword -noprompt<cr>')
 map('n', '<leader>g', ':Grepper -tool ag<cr>')
-map('i', '<C-Space>', '<C-x><C-o>', {noremap = true})
-map('i', '<C-@>', '<C-Space>', {noremap = true})
-map('n', 'K', ':call show_documentation()<CR>', {noremap = true, silent = true})
 map('v', '<', '<gv', {noremap = true})
 map('v', '>', '>gv', {noremap = true})
 map('v', 'y', 'myy`y', {noremap = true})
@@ -167,8 +163,10 @@ map('c', 'w!!', 'w !sudo tee % >/dev/null')
 map('n', '<C-p>', ':Telescope find_files<cr>', {noremap = true})
 map('n', '<leader>b', ':Telescope buffers<cr>', {noremap = true})
 map('n', '<leader>c', _G.delete_cur_buffer_not_close_window, {noremap = true})
-map('n', '<leader>ai', ':GPTModelsCode<CR>')
-map('v', '<leader>ai', ':GPTModelsCode<CR>')
+map('n', '<leader>ac', ':CodeCompanionChat toggle<CR>')
+map('v', '<leader>ae', ":'<,'>CodeCompanion /explain<CR>")
+map('v', '<leader>at', ":'<,'>CodeCompanion /tests<CR>")
+map('n', '<leader>aa', ':CodeCompanionActions<CR>')
 
 -- Because I'm always typing :W to save
 vim.api.nvim_create_user_command('W', 'w', {})
@@ -244,3 +242,15 @@ function go_org_imports(wait_ms)
     end
 end
 
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "codecompanion", -- Target the chat buffer's filetype
+  group = vim.api.nvim_create_augroup("CodeCompanionResize", { clear = true }),
+  callback = function()
+    -- Set the width of the current window (the chat window) to 40 columns
+    vim.cmd("vertical resize 40")
+    
+    -- Equalize the size of all *other* windows in the current tab/split group.
+    -- This is important to ensure your code window gets a fair share back.
+    vim.cmd("wincmd =")
+  end,
+})

@@ -1,12 +1,16 @@
 return {
     'williamboman/mason-lspconfig.nvim',
     name = 'mason-lspconfig',
-    dependencies = {'mason.nvim'},
+    dependencies = {'mason.nvim', 'nvim-treesitter/nvim-treesitter'},
     opts = {
         automatic_installation = true,
+        ensure_installed = {
+            "svelte",
+            "ts_ls",  -- TypeScript/JavaScript
+        },
     },
     config = function()
-        local util = require('lspconfig.util')  -- Note: util is still from lspconfig.util
+        local util = require('lspconfig.util')
         local path = util.path
         
         -- Use an on_attach function to only map the following keys
@@ -21,7 +25,7 @@ return {
           vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
           vim.keymap.set('n', 'gi', vim.lsp.buf.implementation, opts)
           vim.keymap.set('n', '<space>rn', vim.lsp.buf.rename, opts)
-          vim.keymap.set('n', '<space>e', vim.diagnostic.open_float, opts)  -- Note: diagnostic API changed
+          vim.keymap.set('n', '<space>e', vim.diagnostic.open_float, opts)
           vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, opts)
           vim.keymap.set('n', ']d', vim.diagnostic.goto_next, opts)
           vim.keymap.set('n', '<space>q', vim.diagnostic.setloclist, opts)
@@ -62,9 +66,37 @@ return {
             },
         }
         
+        -- Setup TypeScript/JavaScript
+        vim.lsp.config.ts_ls = {
+            cmd = {'typescript-language-server', '--stdio'},
+            filetypes = {'javascript', 'javascriptreact', 'typescript', 'typescriptreact'},
+            root_markers = {'package.json', 'tsconfig.json', 'jsconfig.json', '.git'},
+        }
+        
+        -- Setup Svelte
+        vim.lsp.config.svelte = {
+            cmd = {'svelteserver', '--stdio'},
+            filetypes = {'svelte'},
+            root_markers = {'package.json', '.git'},
+            on_new_config = function(config, root_dir)
+                config.settings = vim.tbl_deep_extend('force', config.settings or {}, {
+                    svelte = {
+                        plugin = {
+                            svelte = {
+                                -- Exclude problematic directories
+                                exclude = {'/run/**', '/dev/**', '/proc/**', '/sys/**'}
+                            }
+                        }
+                    }
+                })
+            end,
+        }
+        
         -- Enable the configurations with vim.lsp.enable
         vim.lsp.enable('pyright')
         vim.lsp.enable('gopls')
+        vim.lsp.enable('ts_ls')
+        vim.lsp.enable('svelte')
         
         -- Set up autocmd to attach to buffers
         vim.api.nvim_create_autocmd('FileType', {
@@ -81,6 +113,26 @@ return {
             pattern = {'go', 'gomod'},
             callback = function(args)
                 vim.lsp.start(vim.lsp.config.gopls, { 
+                    bufnr = args.buf,
+                    on_attach = on_attach
+                })
+            end,
+        })
+        
+        vim.api.nvim_create_autocmd('FileType', {
+            pattern = {'javascript', 'javascriptreact', 'typescript', 'typescriptreact'},
+            callback = function(args)
+                vim.lsp.start(vim.lsp.config.ts_ls, { 
+                    bufnr = args.buf,
+                    on_attach = on_attach
+                })
+            end,
+        })
+        
+        vim.api.nvim_create_autocmd('FileType', {
+            pattern = 'svelte',
+            callback = function(args)
+                vim.lsp.start(vim.lsp.config.svelte, { 
                     bufnr = args.buf,
                     on_attach = on_attach
                 })

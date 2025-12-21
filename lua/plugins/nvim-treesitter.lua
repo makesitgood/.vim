@@ -4,7 +4,7 @@ return {
   version = false, -- last release is way too old and doesn't work on Windows
   build = ":TSUpdate",
   lazy = false, -- load treesitter early when opening a file from the cmdline
-  cmd = { "TSUpdateSync", "TSUpdate", "TSInstall" },
+  -- cmd = { "TSUpdateSync", "TSUpdate", "TSInstall" },
   opts_extend = { "ensure_installed" },
   opts = {
     highlight = { enable = true },
@@ -12,6 +12,7 @@ return {
     ensure_installed = {
       "bash",
       "c",
+      "css",
       "diff",
       "html",
       "javascript",
@@ -27,6 +28,7 @@ return {
       "python",
       "query",
       "regex",
+      "svelte",
       "toml",
       "tsx",
       "typescript",
@@ -36,4 +38,7 @@ return {
       "yaml",
     },
   },
+  config = function(_, opts)
+      require("nvim-treesitter.configs").setup(opts)
+    end,
 }
