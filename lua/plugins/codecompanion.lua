@@ -6,6 +6,14 @@ return {
   },
   opts = {
     ignore_warnings = true,
+    display = {
+        chat = {
+            window = {
+                width = 80,
+            },
+        },
+    },
+
     adapters = {
         http = {
           anthropic = function()
@@ -28,7 +36,7 @@ return {
         adapter = "anthropic",
         slash_commands = {
           ["file"] = {
-            callback = "strategies.chat.slash_commands.file",
+            callback = "interactions.chat.slash_commands.builtin.file",
             description = "Select a file using Telescope",
             opts = {
               provider = "telescope",
