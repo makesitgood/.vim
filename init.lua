@@ -7,6 +7,7 @@ vim.cmd('filetype plugin indent on')
 vim.cmd('syntax on')
 --hi clear SignColumn
 
+vim.o.equalalways = false
 vim.opt.compatible = false
 vim.opt.clipboard = 'unnamedplus'
 vim.opt.encoding = 'utf-8'
