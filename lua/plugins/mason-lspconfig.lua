@@ -2,14 +2,15 @@ return {
     'williamboman/mason-lspconfig.nvim',
     name = 'mason-lspconfig',
     dependencies = {'mason.nvim', 'nvim-treesitter/nvim-treesitter'},
-    opts = {
-        automatic_installation = true,
-        ensure_installed = {
-            "svelte",
-            "ts_ls",  -- TypeScript/JavaScript
-        },
-    },
     config = function()
+        require('mason-lspconfig').setup({
+            automatic_installation = true,
+            ensure_installed = {
+                "svelte",
+                "ts_ls",  -- TypeScript/JavaScript
+            },
+        })        
+
         local util = require('lspconfig.util')
         local path = util.path
         
