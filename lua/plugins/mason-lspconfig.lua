@@ -4,15 +4,12 @@ return {
     dependencies = {'mason.nvim', 'nvim-treesitter/nvim-treesitter'},
     config = function()
         require('mason-lspconfig').setup({
-            automatic_installation = true,
+            automatic_installation = false,
             ensure_installed = {
                 "svelte",
                 "ts_ls",  -- TypeScript/JavaScript
             },
-        })        
-
-        local util = require('lspconfig.util')
-        local path = util.path
+        })
         
         -- Use an on_attach function to only map the following keys
         -- after the language server attaches to the current buffer
@@ -31,6 +28,9 @@ return {
           vim.keymap.set('n', ']d', vim.diagnostic.goto_next, opts)
           vim.keymap.set('n', '<space>q', vim.diagnostic.setloclist, opts)
           vim.keymap.set('n', '<space>f', function() vim.lsp.buf.format { async = true } end, opts)
+          
+          -- Debug: confirm on_attach ran
+          print("LSP attached: " .. client.name .. " to buffer " .. bufnr)
         end
         
         -- Setup pyright using vim.lsp.config
@@ -38,6 +38,7 @@ return {
             cmd = { 'pyright-langserver', '--stdio' },
             filetypes = { 'python' },
             root_markers = { '.git', 'pyproject.toml', 'setup.py', 'requirements.txt' },
+            on_attach = on_attach,
             settings = {
                 python = {
                     analysis = {
@@ -57,6 +58,7 @@ return {
             cmd = {'gopls', 'serve'},
             filetypes = {'go', 'gomod'},
             root_markers = {'go.work', 'go.mod', '.git'},
+            on_attach = on_attach,
             settings = {
                 gopls = {
                     analyses = {
@@ -72,72 +74,34 @@ return {
             cmd = {'typescript-language-server', '--stdio'},
             filetypes = {'javascript', 'javascriptreact', 'typescript', 'typescriptreact'},
             root_markers = {'package.json', 'tsconfig.json', 'jsconfig.json', '.git'},
+            on_attach = on_attach,
         }
         
-        -- Setup Svelte
+        -- Setup Svelte with fixed root_dir to prevent scanning system directories
         vim.lsp.config.svelte = {
             cmd = {'svelteserver', '--stdio'},
             filetypes = {'svelte'},
-            root_markers = {'package.json', '.git'},
-            on_new_config = function(config, root_dir)
-                config.settings = vim.tbl_deep_extend('force', config.settings or {}, {
-                    svelte = {
-                        plugin = {
-                            svelte = {
-                                -- Exclude problematic directories
-                                exclude = {'/run/**', '/dev/**', '/proc/**', '/sys/**'}
+            on_attach = on_attach,
+            root_markers = {'package.json', 'svelte.config.js', 'svelte.config.mjs', 'svelte.config.cjs', '.git'},
+            settings = {
+                svelte = {
+                    plugin = {
+                        svelte = {
+                            compilerWarnings = {
+                                -- Optionally suppress some warnings
+                                ['a11y-aria-attributes'] = 'ignore',
+                                ['a11y-incorrect-aria-attribute-type'] = 'ignore',
                             }
                         }
                     }
-                })
-            end,
+                }
+            },
         }
         
-        -- Enable the configurations with vim.lsp.enable
+        -- Enable the configurations - this will auto-start LSPs based on filetype
         vim.lsp.enable('pyright')
         vim.lsp.enable('gopls')
         vim.lsp.enable('ts_ls')
         vim.lsp.enable('svelte')
-        
-        -- Set up autocmd to attach to buffers
-        vim.api.nvim_create_autocmd('FileType', {
-            pattern = 'python',
-            callback = function(args)
-                vim.lsp.start(vim.lsp.config.pyright, { 
-                    bufnr = args.buf,
-                    on_attach = on_attach
-                })
-            end,
-        })
-        
-        vim.api.nvim_create_autocmd('FileType', {
-            pattern = {'go', 'gomod'},
-            callback = function(args)
-                vim.lsp.start(vim.lsp.config.gopls, { 
-                    bufnr = args.buf,
-                    on_attach = on_attach
-                })
-            end,
-        })
-        
-        vim.api.nvim_create_autocmd('FileType', {
-            pattern = {'javascript', 'javascriptreact', 'typescript', 'typescriptreact'},
-            callback = function(args)
-                vim.lsp.start(vim.lsp.config.ts_ls, { 
-                    bufnr = args.buf,
-                    on_attach = on_attach
-                })
-            end,
-        })
-        
-        vim.api.nvim_create_autocmd('FileType', {
-            pattern = 'svelte',
-            callback = function(args)
-                vim.lsp.start(vim.lsp.config.svelte, { 
-                    bufnr = args.buf,
-                    on_attach = on_attach
-                })
-            end,
-        })
     end
 }

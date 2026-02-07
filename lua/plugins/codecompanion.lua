@@ -13,7 +13,6 @@ return {
             },
         },
     },
-
     adapters = {
         http = {
           anthropic = function()
@@ -31,7 +30,7 @@ return {
           end,
         }
     },
-    strategies = {
+    interactions = {  -- Changed from 'strategies' to 'interactions' (v18.0.0+)
       chat = {
         adapter = "anthropic",
         slash_commands = {
@@ -41,6 +40,24 @@ return {
             opts = {
               provider = "telescope",
               contains_code = true,
+            },
+          },
+        },
+        tools = {
+          ["create_file"] = {
+            opts = {
+              require_approval_before = false,  -- Auto-approve file creation
+            },
+          },
+          ["insert_edit_into_file"] = {
+            opts = {
+              require_approval_before = false,  -- Auto-approve file edits
+              require_confirmation_after = true,  
+            },
+          },
+          ["read_file"] = {
+            opts = {
+              require_approval_before = false,  -- Auto-approve file reads
             },
           },
         },

@@ -32,7 +32,7 @@ vim.opt.shiftwidth = 4
 vim.opt.softtabstop = 4
 vim.opt.tabstop = 4
 vim.opt.smarttab = true
-vim.opt.cindent = true
+--vim.opt.cindent = true
 --vim.opt.backup = false
 --vim.opt.writebackup = false
 --vim.opt.noswapfile 
@@ -168,7 +168,14 @@ map('n', '<leader>ac', ':CodeCompanionChat toggle<CR>')
 map('v', '<leader>ae', ":'<,'>CodeCompanion /explain<CR>")
 map('v', '<leader>at', ":'<,'>CodeCompanion /tests<CR>")
 map('n', '<leader>aa', ':CodeCompanionActions<CR>')
-
+map('n', '<leader>ar', function()
+  -- Close current chat if open
+  vim.cmd('CodeCompanionChat close')
+  -- Create new chat
+  vim.cmd('CodeCompanion')
+  -- Apply rules
+  vim.cmd('CodeCompanion /rules default')
+end, { desc = 'Reset CodeCompanion chat with rules' })
 -- Because I'm always typing :W to save
 vim.api.nvim_create_user_command('W', 'w', {})
 
@@ -254,4 +261,15 @@ vim.api.nvim_create_autocmd("FileType", {
     -- This is important to ensure your code window gets a fair share back.
     vim.cmd("wincmd =")
   end,
+})
+
+-- Js standards
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = { "javascript", "javascriptreact", "typescript", "typescriptreact", "svelte", "vue" },
+  callback = function()
+    vim.bo.shiftwidth = 2
+    vim.bo.tabstop = 2
+    vim.bo.softtabstop = 2
+    vim.bo.expandtab = true
+  end
 })
